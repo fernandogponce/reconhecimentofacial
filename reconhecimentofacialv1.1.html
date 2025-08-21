@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparação Facial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Importa a biblioteca face-api.js -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom dark theme styles */
+        .dark-card {
+            background-color: #1F2937; /* bg-gray-800 */
+        }
+        .dark-body {
+            background-color: #111827; /* bg-gray-900 */
+            color: #D1D5DB; /* text-gray-300 */
+        }
+        .dark-border {
+            border-color: #374151; /* border-gray-700 */
+        }
+        .dark-input::file-selector-button {
+            background-color: #374151; /* bg-gray-700 */
+            color: #D1D5DB; /* text-gray-300 */
+            border: 0;
+            border-radius: 9999px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-right: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .dark-input::file-selector-button:hover {
+            background-color: #4B5563; /* bg-gray-600 */
+        }
+    </style>
+</head>
+<body class="dark-body">
+
+    <!-- Indicador de Carregamento Inicial -->
+    <div id="loader" class="fixed inset-0 bg-gray-900 bg-opacity-95 flex flex-col items-center justify-center z-50">
+        <svg class="animate-spin h-12 w-12 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p id="loader-text" class="mt-4 text-lg font-medium text-gray-300">Carregando modelos de IA...</p>
+        <p class="mt-1 text-sm text-gray-500">Isso pode levar alguns segundos.</p>
+    </div>
+
+    <div id="app-content" class="container mx-auto p-4 md:p-6 max-w-4xl hidden">
+        <header class="text-center mb-8 flex flex-col items-center">
+            <p class="text-gray-100 mt-2 text-4xl md:text-5xl font-bold">Comparação Facial</p>
+            <p class="text-gray-400 mt-4 text-lg">Sistema de análise e comparação entre duas fotografias</p>
+        </header>
+
+        <!-- Seção de Comparação Direta -->
+        <div class="dark-card p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-100 border-b dark-border pb-2">Comparar Duas Fotos</h2>
+            <p class="text-gray-400 mb-4">Envie duas imagens para verificar se pertencem à mesma pessoa.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="compareImage1" class="block text-sm font-medium text-gray-300 mb-1">Imagem 1</label>
+                    <div id="dropZone1" class="border-2 border-dashed dark-border rounded-lg p-4 text-center bg-gray-700 hover:bg-gray-600 transition-colors cursor-pointer">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <p class="text-gray-300 text-sm">Arraste uma imagem aqui ou <span class="text-blue-400 underline">clique para escolher</span></p>
+                        <p class="text-gray-500 text-xs mt-1">PNG, JPG até 10MB</p>
+                    </div>
+                    <input type="file" id="compareImage1" accept="image/jpeg, image/png" class="hidden">
+                    <img id="preview1" class="mt-2 rounded-lg w-full h-auto hidden border-2 dark-border"/>
+                </div>
+                <div>
+                    <label for="compareImage2" class="block text-sm font-medium text-gray-300 mb-1">Imagem 2</label>
+                    <div id="dropZone2" class="border-2 border-dashed dark-border rounded-lg p-4 text-center bg-gray-700 hover:bg-gray-600 transition-colors cursor-pointer">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <p class="text-gray-300 text-sm">Arraste uma imagem aqui ou <span class="text-blue-400 underline">clique para escolher</span></p>
+                        <p class="text-gray-500 text-xs mt-1">PNG, JPG até 10MB</p>
+                    </div>
+                    <input type="file" id="compareImage2" accept="image/jpeg, image/png" class="hidden">
+                    <img id="preview2" class="mt-2 rounded-lg w-full h-auto hidden border-2 dark-border"/>
+                </div>
+            </div>
+            <button id="compareBtn" class="mt-4 w-full bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed">
+                Comparar Faces
+            </button>
+            <div id="compareResult" class="mt-4 text-center font-medium text-lg"></div>
+        </div>
+    </div>
+
+    <!-- Modal para exibir mensagens -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-40 p-4">
+        <div class="dark-card rounded-lg shadow-xl p-6 max-w-sm w-full text-center border dark-border">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-100">Aviso</h3>
+            <p id="modal-message" class="my-4 text-gray-300"></p>
+            <button id="modal-close" class="bg-blue-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600 transition-colors">OK</button>
+        </div>
+    </div>
+
+<script>
+    // Seleção de elementos do DOM
+    const loader = document.getElementById('loader');
+    const loaderText = document.getElementById('loader-text');
+    const appContent = document.getElementById('app-content');
+    
+    // Elementos da Seção de Comparação Direta
+    const compareImage1 = document.getElementById('compareImage1');
+    const compareImage2 = document.getElementById('compareImage2');
+    const dropZone1 = document.getElementById('dropZone1');
+    const dropZone2 = document.getElementById('dropZone2');
+    const preview1 = document.getElementById('preview1');
+    const preview2 = document.getElementById('preview2');
+    const compareBtn = document.getElementById('compareBtn');
+    const compareResult = document.getElementById('compareResult');
+
+    // Elementos do Modal
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    const modalClose = document.getElementById('modal-close');
+
+    // Variáveis de estado
+    const FACE_MATCH_THRESHOLD = 0.55; // Limiar de similaridade. Pode ser ajustado.
+
+    // --- FUNÇÕES DO MODAL ---
+    function showModal(title, message) {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    modalClose.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    });
+
+    // --- CARREGAMENTO DOS MODELOS ---
+    async function loadModels() {
+        const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
+        try {
+            await Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+            loader.classList.add('hidden');
+            appContent.classList.remove('hidden');
+        } catch (error) {
+            console.error("Erro ao carregar modelos:", error);
+            loaderText.textContent = "Falha ao carregar os modelos de IA. Tente recarregar a página.";
+        }
+    }
+
+    // --- LÓGICA DE COMPARAÇÃO DIRETA ---
+    
+    // Configuração dos eventos de drag and drop
+    function setupDragAndDrop(dropZone, fileInput, previewElement) {
+        // Clique na zona para abrir seletor de arquivo
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Eventos de drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-blue-900');
+            dropZone.classList.remove('dark-border', 'bg-gray-700');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-900');
+            dropZone.classList.add('dark-border', 'bg-gray-700');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-900');
+            dropZone.classList.add('dark-border', 'bg-gray-700');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                
+                // Verifica se é uma imagem
+                if (file.type.startsWith('image/')) {
+                    // Simula a seleção do arquivo no input
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    fileInput.files = dt.files;
+                    
+                    // Mostra o preview
+                    showPreview(fileInput, previewElement);
+                } else {
+                    showModal('Erro', 'Por favor, arraste apenas arquivos de imagem (PNG, JPG).');
+                }
+            }
+        });
+
+        // Evento change do input de arquivo
+        fileInput.addEventListener('change', (e) => showPreview(e.target, previewElement));
+    }
+
+    // Configura drag and drop para ambas as zonas
+    setupDragAndDrop(dropZone1, compareImage1, preview1);
+    setupDragAndDrop(dropZone2, compareImage2, preview2);
+
+    function showPreview(input, previewElement) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewElement.src = e.target.result;
+                previewElement.classList.remove('hidden');
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    compareBtn.addEventListener('click', async () => {
+        if (!compareImage1.files[0] || !compareImage2.files[0]) {
+            showModal('Atenção', 'Por favor, envie as duas imagens para comparação.');
+            return;
+        }
+
+        loaderText.textContent = 'Comparando as duas faces...';
+        loader.classList.remove('hidden');
+        compareResult.textContent = '';
+
+        try {
+            const img1 = await faceapi.bufferToImage(compareImage1.files[0]);
+            const img2 = await faceapi.bufferToImage(compareImage2.files[0]);
+
+            const desc1 = await faceapi.detectSingleFace(img1).withFaceLandmarks().withFaceDescriptor();
+            const desc2 = await faceapi.detectSingleFace(img2).withFaceLandmarks().withFaceDescriptor();
+
+            if (!desc1 || !desc2) {
+                showModal('Erro', 'Não foi possível detectar um rosto em uma ou ambas as imagens.');
+                loader.classList.add('hidden');
+                return;
+            }
+
+            const distance = faceapi.euclideanDistance(desc1.descriptor, desc2.descriptor);
+            const similarity = ((1 - distance) * 100).toFixed(2);
+
+            if (distance < FACE_MATCH_THRESHOLD) {
+                compareResult.innerHTML = `<span class="text-green-400">✅ POSITIVO | Indivíduos compatíveis (Similaridade: ${similarity}%)</span>`;
+            } else {
+                compareResult.innerHTML = `<span class="text-red-400">❌ NEGATIVO | Indivíduos não compatíveis (Similaridade: ${similarity}%)</span>`;
+            }
+        } catch (error) {
+            console.error(error);
+            showModal('Erro', 'Ocorreu um erro ao processar as imagens.');
+        } finally {
+            loader.classList.add('hidden');
+        }
+    });
+
+    // --- INICIALIZAÇÃO ---
+    window.onload = () => {
+        loadModels();
+    };
+
+</script>
+</body>
+</html>
